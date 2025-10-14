@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
+    [Header("Movement Settings")]
     public float moveSpeed = 5f;
     public float gridSize = 1f;   // ขนาดของช่อง Grid (Tile Size)
 
@@ -13,16 +14,30 @@ public class PlayerController : MonoBehaviour
 
     private Animator animator;
 
+    [Header("Collision Layers")]
     public LayerMask solidObjectsLayer;
     public LayerMask interactableLayer;
     public LayerMask battleLayer;
 
+    [Header("Projectile Settings")]
     public GameObject projectilePrefab;  // 🔥 Drag prefab มาวางใน Inspector
     public float projectileSpeed = 10f;
+
+    [Header("Health Settings")]
+    public int maxHealth = 10;
+    private int currentHealth;
+
+    public HealthUI healthUI;
 
     private void Awake()
     {
         animator = GetComponent<Animator>();
+
+        currentHealth = maxHealth;
+
+        if (healthUI != null)
+            healthUI.SetMaxHealth(maxHealth);
+
     }
 
     public void HandleUpdate()
@@ -37,6 +52,7 @@ public class PlayerController : MonoBehaviour
 
             if (input != Vector2.zero)
             {
+                // อัปเดตทิศทางอนิเมชัน
                 animator.SetFloat("moveX", input.x);
                 animator.SetFloat("moveY", input.y);
 
@@ -53,18 +69,17 @@ public class PlayerController : MonoBehaviour
                 }
             }
         }
-        if (animator != null)
-        {
-            animator.SetBool("isMoving", true); 
-        }
-        //animator.SetBool("isMoving", isMoving);
 
+        // ปุ่มโต้ตอบ (เช่น พูดคุย, ตรวจของ)
         if (Input.GetKeyDown(KeyCode.Z))
             Interact();
 
         // คลิกขวาเพื่อเสก projectile
         if (Input.GetMouseButtonDown(1))
-        SpawnProjectile();
+            SpawnProjectile();
+
+        // ✅ อัปเดตสถานะอนิเมชันให้ตรงกับการเคลื่อนไหวจริง
+        animator.SetBool("isMoving", isMoving);
     }
 
     void Interact()
@@ -89,7 +104,7 @@ public class PlayerController : MonoBehaviour
             yield return null;
         }
 
-        // 🔥 Snap to Grid ให้ตรงกับ Tile Size
+        // 🔥 Snap to Grid ให้ตรงกับ Tile
         transform.position = new Vector3(
             Mathf.Round(transform.position.x / gridSize) * gridSize,
             Mathf.Round(transform.position.y / gridSize) * gridSize,
@@ -102,6 +117,7 @@ public class PlayerController : MonoBehaviour
 
     private bool IsWalkable(Vector3 targetPos)
     {
+        // ถ้าตำแหน่งเป้าหมายชนสิ่งกีดขวางหรือวัตถุโต้ตอบ — เดินไม่ได้
         if (Physics2D.OverlapCircle(targetPos, 0.2f, solidObjectsLayer | interactableLayer) != null)
         {
             return false;
@@ -113,9 +129,9 @@ public class PlayerController : MonoBehaviour
     {
         if (projectilePrefab == null) return;
 
+        // จุดกำเนิดกระสุนอยู่ข้างหน้าผู้เล่นเล็กน้อย
         Vector3 spawnPos = transform.position + new Vector3(lastDir.x, lastDir.y, 0) * 0.5f;
 
-        // สร้างออปเจค
         GameObject proj = Instantiate(projectilePrefab, spawnPos, Quaternion.identity);
 
         // ส่งทิศทางให้ projectile
@@ -124,6 +140,8 @@ public class PlayerController : MonoBehaviour
         {
             p.SetDirection(lastDir, projectileSpeed);
         }
+
+        TakeDamage(1);
     }
 
     private void CheckForEncounters()
@@ -136,4 +154,22 @@ public class PlayerController : MonoBehaviour
             }
         }
     }
+
+    public void TakeDamage(int amount)
+    {
+        currentHealth -= amount;
+        currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
+
+        if (healthUI != null)
+            healthUI.SetHealth(currentHealth);
+
+        if (currentHealth <= 0)
+        {
+            Debug.Log("Player is out of health!");
+            // ใส่โค้ด Game Over หรือ disable movement ตรงนี้ได้
+        }
+    }
+
+
+
 }

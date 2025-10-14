@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class Projectile : MonoBehaviour
@@ -8,12 +6,11 @@ public class Projectile : MonoBehaviour
     private float moveSpeed;
 
     [Header("Projectile Settings")]
-    public float lifeTime = 3f; // เวลาอยู่สูงสุดก่อนลบตัวเอง (วินาที)
-    public LayerMask destroyOnLayer; // Layer ที่ชนแล้วให้ทำลาย เช่น SolidObject, Enemy
+    public float lifeTime = 3f; 
+    public string[] destroyTags; // ใส่ Tag ของสิ่งที่ชนแล้วให้หาย
 
     void Start()
     {
-        // 🔥 กันเสกทิ้งไว้เยอะเกินไปจนหน่วง
         Destroy(gameObject, lifeTime);
     }
 
@@ -21,20 +18,45 @@ public class Projectile : MonoBehaviour
     {
         moveDir = direction.normalized;
         moveSpeed = speed;
+
+        float angle = Mathf.Atan2(moveDir.y, moveDir.x) * Mathf.Rad2Deg;
+        transform.rotation = Quaternion.Euler(0, 0, angle);
     }
 
     void Update()
     {
-        // เคลื่อนที่ในทิศทางที่ตั้งไว้
-        transform.Translate(moveDir * moveSpeed * Time.deltaTime);
+        transform.Translate(Vector3.right * moveSpeed * Time.deltaTime);
     }
 
+    // ถ้า Collider ไม่เป็น Trigger
+    void OnCollisionEnter2D(Collision2D collision)
+    {
+        CheckCollision(collision.gameObject);
+    }
+
+    // ถ้า Collider เป็น Trigger
     void OnTriggerEnter2D(Collider2D collision)
     {
-        // 🔍 ตรวจว่าชน Layer ที่เราต้องการให้หายหรือไม่
-        if (((1 << collision.gameObject.layer) & destroyOnLayer) != 0)
+        CheckCollision(collision.gameObject);
+    }
+
+    void CheckCollision(GameObject obj)
+    {
+        foreach (string tag in destroyTags)
         {
-            Destroy(gameObject);
+            if (obj.CompareTag(tag))
+            {
+                // ถ้าโดน Enemy ลด HP
+                if (tag == "Enemy")
+                {
+                    EnemyController enemy = obj.GetComponent<EnemyController>();
+                    if (enemy != null)
+                        enemy.TakeDamage(1);
+                }
+
+                Destroy(gameObject);
+                break;
+            }
         }
     }
 }
