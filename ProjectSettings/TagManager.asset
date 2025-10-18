@@ -56,6 +56,9 @@ TagManager:
   - name: Foreground
     uniqueID: 1354924199
     locked: 0
+  - name: LeafRoof
+    uniqueID: 2920099853
+    locked: 0
   - name: Deco
     uniqueID: 3522186691
     locked: 0
