@@ -29,6 +29,14 @@ public class PlayerController : MonoBehaviour
 
     public HealthUI healthUI;
 
+    [Header("Low Health Warning")]
+    public AudioSource lowHealthAudio;
+    public float lowHealthThreshold = 25f;
+    public float flashSpeed = 2f;
+    public CanvasGroup redOverlay; // ใช้ CanvasGroup แทน Image เพื่อปรับความโปร่งได้เนียนกว่า
+
+    private bool isLowHealthEffectActive = false;
+
     private void Awake()
     {
         animator = GetComponent<Animator>();
@@ -163,11 +171,50 @@ public class PlayerController : MonoBehaviour
         if (healthUI != null)
             healthUI.SetHealth(currentHealth);
 
+        if (currentHealth <= lowHealthThreshold && !isLowHealthEffectActive)
+            StartCoroutine(LowHealthEffect());
+        else if (currentHealth > lowHealthThreshold && isLowHealthEffectActive)
+            StopLowHealthEffect();
+
         if (currentHealth <= 0)
         {
             Debug.Log("Player is out of health!");
             // ใส่โค้ด Game Over หรือ disable movement ตรงนี้ได้
         }
+    }
+
+    IEnumerator LowHealthEffect()
+    {
+        isLowHealthEffectActive = true;
+
+        // เล่นเสียงเตือนแบบลูป
+        if (lowHealthAudio != null && !lowHealthAudio.isPlaying)
+        {
+            lowHealthAudio.loop = true;
+            lowHealthAudio.Play();
+        }
+
+        float t = 0f;
+        while (isLowHealthEffectActive)
+        {
+            t += Time.deltaTime * flashSpeed;
+            float alpha = Mathf.PingPong(t, 1f) * 0.5f; // กระพริบ 0 → 0.5
+            if (redOverlay != null)
+                redOverlay.alpha = alpha;
+
+            yield return null;
+        }
+    }
+    
+    void StopLowHealthEffect()
+    {
+        isLowHealthEffectActive = false;
+
+        if (lowHealthAudio != null && lowHealthAudio.isPlaying)
+            lowHealthAudio.Stop();
+
+        if (redOverlay != null)
+            redOverlay.alpha = 0f;
     }
 
 
