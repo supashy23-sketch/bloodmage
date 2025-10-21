@@ -699,9 +699,9 @@ AudioSource:
   m_Enabled: 1
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
-  m_audioClip: {fileID: 8300000, guid: 71be37de37b194f4cb313edc1ae87a15, type: 3}
+  m_audioClip: {fileID: 8300000, guid: 1b3754a5df917c24fab7487ca5965186, type: 3}
   m_PlayOnAwake: 1
-  m_Volume: 1
+  m_Volume: 0.505
   m_Pitch: 1
   Loop: 1
   Mute: 0
@@ -2125,7 +2125,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 58064cebfbca72c45ad75ea4db957b2f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  sceneName: Stage1
+  sceneName: Level1
   changeOnClick: 1
 --- !u!4 &416424160
 Transform:

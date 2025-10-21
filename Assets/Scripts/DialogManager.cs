@@ -1,23 +1,16 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class DialogManager : MonoBehaviour
 {
-    [Header("UI")]
-    public GameObject dialogBox;
-    public Text dialogText;
-    public GameObject choiceBox;
-    public Transform choiceContainer;
-    public Button choiceButtonPrefab;
-
-    public int lettersPerSecond = 30;
+    [SerializeField] GameObject dialogBox;
+    [SerializeField] Text dialogText;
+    [SerializeField] int lettersPerSecond;
 
     public event Action OnShowDialog;
     public event Action OnHideDialog;
-
     public static DialogManager Instance { get; private set; }
 
     private void Awake()
@@ -28,106 +21,52 @@ public class DialogManager : MonoBehaviour
     private Dialog dialog;
     private int currentLine = 0;
     private bool isTyping;
-    private bool showingChoices = false;
+    private bool isDialogActive; // ใช้ตรวจสอบสถานะของบทสนทนา
+    public bool IsDialogActive => isDialogActive;
 
+    // แสดงบทสนทนา
     public IEnumerator ShowDialog(Dialog dialog)
     {
-        yield return new WaitForEndOfFrame();
+        if (isDialogActive) yield break; // ถ้าบทสนทนายังทำงานอยู่ ให้หยุดฟังก์ชันนี้
 
+        isDialogActive = true; // ตั้งสถานะเป็นกำลังมีบทสนทนา
         OnShowDialog?.Invoke();
 
         this.dialog = dialog;
         dialogBox.SetActive(true);
-        choiceBox.SetActive(false);
+        currentLine = 0;
 
-        StartCoroutine(TypeDialog(dialog.lines[0]));
+        yield return StartCoroutine(TypeDialog(dialog.Lines[currentLine]));
     }
 
+    // จัดการการอัปเดตการกดปุ่ม
     public void HandleUpdate()
     {
-        if (showingChoices) return;
-
-        if (Input.GetKeyUp(KeyCode.Z) && !isTyping)
+        if (Input.GetKeyUp(KeyCode.E) && !isTyping && isDialogActive)
         {
             currentLine++;
-            if (currentLine < dialog.lines.Count)
-                StartCoroutine(TypeDialog(dialog.lines[currentLine]));
+            if (currentLine < dialog.Lines.Count)
+            {
+                StartCoroutine(TypeDialog(dialog.Lines[currentLine]));
+            }
             else
             {
-                if (dialog.choices != null && dialog.choices.Count > 0)
-                    ShowChoices();
-                else
-                    CloseDialog();
+                dialogBox.SetActive(false);
+                isDialogActive = false; // ตั้งสถานะบทสนทนาเสร็จสิ้น
+                OnHideDialog?.Invoke();
             }
         }
     }
 
-    private void ShowChoices()
-    {
-        showingChoices = true;
-        choiceBox.SetActive(true);
-
-        // ลบปุ่มเก่า
-        foreach (Transform child in choiceContainer)
-            Destroy(child.gameObject);
-
-        foreach (var choice in dialog.choices)
-        {
-            // ตรวจสอบเงื่อนไข stat
-            if (!string.IsNullOrEmpty(choice.requiredStat))
-            {
-                int current = GameStatsManager.Instance.GetStat(choice.requiredStat);
-                if (current < choice.requiredValue) continue;
-            }
-
-            var button = Instantiate(choiceButtonPrefab, choiceContainer);
-            button.GetComponentInChildren<Text>().text = choice.choiceText;
-
-            button.onClick.AddListener(() =>
-            {
-                // ปรับ stat
-                if (!string.IsNullOrEmpty(choice.statToChange))
-                    GameStatsManager.Instance.ChangeStat(choice.statToChange, choice.changeAmount);
-
-                // รีเซ็ต oneTimeDialog ของ NPC
-                if (choice.resetOneTimeDialog && !string.IsNullOrEmpty(choice.targetNPCID))
-                {
-                    // เพิ่มค่า _oneTimeReset = 1 เฉพาะครั้งนี้
-                    GameStatsManager.Instance.ChangeStat(choice.targetNPCID + "_oneTimeReset", 1);
-                }
-                // ไป Dialog ถัดไป
-                if (choice.nextDialog != null)
-                {
-                    dialog = choice.nextDialog;
-                    currentLine = 0;
-                    choiceBox.SetActive(false);
-                    showingChoices = false;
-                    StartCoroutine(TypeDialog(dialog.lines[0]));
-                }
-                else
-                {
-                    CloseDialog();
-                }
-            });
-        }
-    }
-
-    private void CloseDialog()
-    {
-        dialogBox.SetActive(false);
-        currentLine = 0;
-        showingChoices = false;
-        OnHideDialog?.Invoke();
-    }
-
-    public IEnumerator TypeDialog(string line)
+    // พิมพ์ข้อความทีละตัวอักษร
+    private IEnumerator TypeDialog(string line)
     {
         isTyping = true;
         dialogText.text = "";
         foreach (var letter in line.ToCharArray())
         {
             dialogText.text += letter;
-            yield return new WaitForSeconds(1f / lettersPerSecond);
+            yield return new WaitForSeconds(1f / Mathf.Max(1, lettersPerSecond));
         }
         isTyping = false;
     }

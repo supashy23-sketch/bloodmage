@@ -20,6 +20,12 @@ public class EnemyController : MonoBehaviour
 
     private Rigidbody2D rb;
     private Animator animator;
+    float moveX;
+    float moveY;
+    bool isMoving;
+
+    public AudioSource audioSource;
+    public AudioClip hurtP;
 
     void Awake()
     {
@@ -43,9 +49,7 @@ public class EnemyController : MonoBehaviour
                 moveDir = (player.position - transform.position).normalized;
                 rb.MovePosition(rb.position + moveDir * moveSpeed * Time.deltaTime);
 
-
-
-                // อัปเดต animator
+                // 🎬 อัปเดต animator ตอนเคลื่อนไหว
                 if (animator != null)
                 {
                     animator.SetFloat("moveX", moveDir.x);
@@ -55,7 +59,16 @@ public class EnemyController : MonoBehaviour
             }
             else
             {
-                if (animator != null) animator.SetBool("isMoving", false);
+                // 🎬 หยุดเคลื่อนไหว → แสดงทิศทางล่าสุด
+                if (animator != null)
+                {
+                    animator.SetBool("isMoving", false);
+                    if (moveDir != Vector2.zero)
+                    {
+                        animator.SetFloat("moveX", moveDir.x);
+                        animator.SetFloat("moveY", moveDir.y);
+                    }
+                }
             }
         }
     }
@@ -69,6 +82,8 @@ public class EnemyController : MonoBehaviour
             if (playerCtrl != null)
             {
                 playerCtrl.TakeDamage(attackPower);
+                if (audioSource != null && hurtP != null)
+                audioSource.PlayOneShot(hurtP);
             }
 
             // เริ่มถอยหลัง

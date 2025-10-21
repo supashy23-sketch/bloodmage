@@ -12,6 +12,7 @@ public class GameController : MonoBehaviour
 
     private void Start()
     {
+        state = GameState.FreeRoam;
         DialogManager.Instance.OnShowDialog += () =>
         {
             state = GameState.Dialog;

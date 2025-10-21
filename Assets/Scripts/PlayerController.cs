@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PlayerController : MonoBehaviour
 {
@@ -22,6 +23,12 @@ public class PlayerController : MonoBehaviour
     [Header("Projectile Settings")]
     public GameObject projectilePrefab;  // 🔥 Drag prefab มาวางใน Inspector
     public float projectileSpeed = 10f;
+    public AudioSource audioSource;         // 🔊 แหล่งเล่นเสียง
+    public AudioSource footstepSource;    // ✅ ใช้เฉพาะเสียงเดิน
+    public AudioClip shootSound;            // 🔥 เสียงยิง
+    public AudioClip footstepSound;      // เสียงเดิน
+   
+    
 
     [Header("Health Settings")]
     public int maxHealth = 10;
@@ -36,6 +43,8 @@ public class PlayerController : MonoBehaviour
     public CanvasGroup redOverlay; // ใช้ CanvasGroup แทน Image เพื่อปรับความโปร่งได้เนียนกว่า
 
     private bool isLowHealthEffectActive = false;
+    public string sceneName;
+  
 
     private void Awake()
     {
@@ -79,7 +88,7 @@ public class PlayerController : MonoBehaviour
         }
 
         // ปุ่มโต้ตอบ (เช่น พูดคุย, ตรวจของ)
-        if (Input.GetKeyDown(KeyCode.Z))
+        if (Input.GetKeyDown(KeyCode.E))
             Interact();
 
         // คลิกขวาเพื่อเสก projectile
@@ -88,6 +97,23 @@ public class PlayerController : MonoBehaviour
 
         // ✅ อัปเดตสถานะอนิเมชันให้ตรงกับการเคลื่อนไหวจริง
         animator.SetBool("isMoving", isMoving);
+        // ✅ เสียงเดิน
+        if (isMoving)
+        {
+            if (footstepSource != null && !footstepSource.isPlaying)
+            {
+                footstepSource.clip = footstepSound;
+                footstepSource.loop = true;
+                footstepSource.Play();
+            }
+        }
+        else
+        {
+            if (footstepSource != null && footstepSource.isPlaying)
+                footstepSource.Stop();
+        }
+        
+
     }
 
     void Interact()
@@ -137,6 +163,10 @@ public class PlayerController : MonoBehaviour
     {
         if (projectilePrefab == null) return;
 
+        // 🔊 เล่นเสียงตอนยิง
+        if (audioSource != null && shootSound != null)
+        audioSource.PlayOneShot(shootSound);
+
         // จุดกำเนิดกระสุนอยู่ข้างหน้าผู้เล่นเล็กน้อย
         Vector3 spawnPos = transform.position + new Vector3(lastDir.x, lastDir.y, 0) * 0.5f;
 
@@ -167,6 +197,7 @@ public class PlayerController : MonoBehaviour
     {
         currentHealth -= amount;
         currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
+        
 
         if (healthUI != null)
             healthUI.SetHealth(currentHealth);
@@ -178,6 +209,7 @@ public class PlayerController : MonoBehaviour
 
         if (currentHealth <= 0)
         {
+            SceneManager.LoadScene(sceneName);
             Debug.Log("Player is out of health!");
             // ใส่โค้ด Game Over หรือ disable movement ตรงนี้ได้
         }
@@ -217,6 +249,6 @@ public class PlayerController : MonoBehaviour
             redOverlay.alpha = 0f;
     }
 
-
+    
 
 }
