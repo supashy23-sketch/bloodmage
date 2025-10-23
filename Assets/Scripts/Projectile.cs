@@ -5,8 +5,10 @@ public class Projectile : MonoBehaviour
     private Vector2 moveDir;
     private float moveSpeed;
 
+    private int damage = 1;
+
     [Header("Projectile Settings")]
-    public float lifeTime = 3f; 
+    public float lifeTime = 3f;
     public string[] destroyTags; // ใส่ Tag ของสิ่งที่ชนแล้วให้หาย
 
     void Start()
@@ -51,7 +53,7 @@ public class Projectile : MonoBehaviour
                 {
                     EnemyController enemy = obj.GetComponent<EnemyController>();
                     if (enemy != null)
-                        enemy.TakeDamage(1);
+                        enemy.TakeDamage(damage);
                 }
 
                 Destroy(gameObject);
@@ -59,4 +61,13 @@ public class Projectile : MonoBehaviour
             }
         }
     }
+
+    public void SetDamage(int value)
+    {
+        damage = value;
+    }
+
+
+
+
 }

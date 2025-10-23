@@ -27,6 +27,14 @@ public class PlayerController : MonoBehaviour
     public AudioSource footstepSource;    // ✅ ใช้เฉพาะเสียงเดิน
     public AudioClip shootSound;            // 🔥 เสียงยิง
     public AudioClip footstepSound;      // เสียงเดิน
+
+    [Header("EXP & Level System")]
+    public int currentExp = 0;
+    public int currentLevel = 1;
+    public int[] expToNextLevel = { 0, 100, 200, 300 }; // แต่ละเลเวลต้องใช้เท่านี้
+    public ExperienceUI expUI; // ผูกใน Inspector
+
+    private int projectileDamage = 1; // ดาเมจของกระสุนตามเลเวล
    
     
 
@@ -54,6 +62,13 @@ public class PlayerController : MonoBehaviour
 
         if (healthUI != null)
             healthUI.SetMaxHealth(maxHealth);
+        
+        if (expUI != null)
+        {
+            expUI.SetMaxExp(expToNextLevel[currentLevel]);
+            expUI.SetExp(currentExp);
+            expUI.SetLevelText(currentLevel);
+        }
 
     }
 
@@ -177,6 +192,7 @@ public class PlayerController : MonoBehaviour
         if (p != null)
         {
             p.SetDirection(lastDir, projectileSpeed);
+            p.SetDamage(projectileDamage);
         }
 
         TakeDamage(1);
@@ -237,7 +253,7 @@ public class PlayerController : MonoBehaviour
             yield return null;
         }
     }
-    
+
     void StopLowHealthEffect()
     {
         isLowHealthEffectActive = false;
@@ -247,6 +263,40 @@ public class PlayerController : MonoBehaviour
 
         if (redOverlay != null)
             redOverlay.alpha = 0f;
+    }
+
+    public void GainExp(int amount)
+    {
+        if (currentLevel >= 4) return; // ถึงเลเวลสูงสุดแล้ว
+
+        currentExp += amount;
+        if (expUI != null)
+            expUI.SetExp(currentExp);
+
+        // เช็คเลเวลอัพ
+        if (currentExp >= expToNextLevel[currentLevel])
+        {
+            currentExp = 0;
+            currentLevel++;
+            LevelUp();
+        }
+    }
+    
+    void LevelUp()
+    {
+        // อัปเดต UI
+        if (expUI != null)
+        {
+            if (currentLevel < expToNextLevel.Length)
+                expUI.SetMaxExp(expToNextLevel[currentLevel]);
+            expUI.SetLevelText(currentLevel);
+            expUI.SetExp(currentExp);
+        }
+
+        // เพิ่มพลังโปรเจคไทล์ตามเลเวล
+        projectileDamage = Mathf.Clamp(currentLevel, 1, 4);
+
+        Debug.Log("Level Up! Now Level " + currentLevel + ", Damage = " + projectileDamage);
     }
 
     

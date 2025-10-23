@@ -14,6 +14,9 @@ public class EnemyController : MonoBehaviour
     public float retreatTime = 1.5f; // เวลาเดินถอยหลังหลังชนผู้เล่น
     public float retreatDistance = 2f; // ระยะที่ถอยหลังแบบสุ่ม
 
+    [Header("EXP Reward")]
+    public int expReward = 20; // ค่าประสบการณ์ที่ให้เมื่อถูกฆ่า
+
     private Transform player;
     private bool isRetreating = false;
     private Vector2 moveDir;
@@ -132,6 +135,12 @@ public class EnemyController : MonoBehaviour
 
     void Die()
     {
+        // แจ้ง Player ว่าได้รับ EXP
+        PlayerController player = FindObjectOfType<PlayerController>();
+        if (player != null)
+        {
+            player.GainExp(expReward);
+        }
         // ตัวอย่างทำลายตัวเอง
         Destroy(gameObject);
     }
