@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class EnemySummoner : MonoBehaviour
 {
@@ -24,6 +25,8 @@ public class EnemySummoner : MonoBehaviour
 
     private Transform player;
     private bool isSummoning = false;
+
+    public string sceneName;
 
     void Awake()
     {
@@ -91,7 +94,7 @@ public class EnemySummoner : MonoBehaviour
             playerCtrl.GainExp(expReward);
             playerCtrl.Heal(healAmount);
         }
-
+        SceneManager.LoadScene(sceneName);
         Destroy(gameObject);
     }
 }
