@@ -14,8 +14,9 @@ public class EnemyController : MonoBehaviour
     public float retreatTime = 1.5f; // เวลาเดินถอยหลังหลังชนผู้เล่น
     public float retreatDistance = 2f; // ระยะที่ถอยหลังแบบสุ่ม
 
-    [Header("EXP Reward")]
+    [Header("EXP & Heal Reward")]
     public int expReward = 20; // ค่าประสบการณ์ที่ให้เมื่อถูกฆ่า
+    public int healAmount = 2; // จำนวนเลือดที่ฟื้นคืนให้ผู้เล่น
 
     private Transform player;
     private bool isRetreating = false;
@@ -29,6 +30,8 @@ public class EnemyController : MonoBehaviour
 
     public AudioSource audioSource;
     public AudioClip hurtP;
+
+    public AudioClip dieSound;
 
     void Awake()
     {
@@ -48,11 +51,9 @@ public class EnemyController : MonoBehaviour
 
             if (distance <= chaseRange)
             {
-                // ตามผู้เล่น
+                // เก็บทิศทางไว้ใน Update (ไม่ใช้ MovePosition ตรงนี้)
                 moveDir = (player.position - transform.position).normalized;
-                rb.MovePosition(rb.position + moveDir * moveSpeed * Time.deltaTime);
 
-                // 🎬 อัปเดต animator ตอนเคลื่อนไหว
                 if (animator != null)
                 {
                     animator.SetFloat("moveX", moveDir.x);
@@ -62,7 +63,6 @@ public class EnemyController : MonoBehaviour
             }
             else
             {
-                // 🎬 หยุดเคลื่อนไหว → แสดงทิศทางล่าสุด
                 if (animator != null)
                 {
                     animator.SetBool("isMoving", false);
@@ -72,7 +72,17 @@ public class EnemyController : MonoBehaviour
                         animator.SetFloat("moveY", moveDir.y);
                     }
                 }
+
+                moveDir = Vector2.zero; // หยุด
             }
+        }
+    }
+
+    void FixedUpdate()
+    {
+        if (!isRetreating && moveDir != Vector2.zero)
+        {
+            rb.MovePosition(rb.position + moveDir * moveSpeed * Time.fixedDeltaTime);
         }
     }
 
@@ -129,6 +139,8 @@ public class EnemyController : MonoBehaviour
 
         if (currentHealth <= 0)
         {
+            if (audioSource != null && dieSound != null)
+                audioSource.PlayOneShot(dieSound);
             Die();
         }
     }
@@ -140,8 +152,16 @@ public class EnemyController : MonoBehaviour
         if (player != null)
         {
             player.GainExp(expReward);
+
+            // 💖 ฟื้นเลือดให้ผู้เล่นตามจำนวนที่ตั้งไว้
+            player.Heal(healAmount);
         }
-        // ตัวอย่างทำลายตัวเอง
+
+        // เล่นเสียงตาย (ถ้ามี)
+        if (audioSource != null && dieSound != null)
+            audioSource.PlayOneShot(dieSound);
+
+        // ทำลายตัวเอง
         Destroy(gameObject);
     }
 }

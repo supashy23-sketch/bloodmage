@@ -48,14 +48,25 @@ public class Projectile : MonoBehaviour
         {
             if (obj.CompareTag(tag))
             {
-                // ถ้าโดน Enemy ลด HP
-                if (tag == "Enemy")
+                // ✅ ตรวจสอบว่าเป็น EnemyController
+                EnemyController enemy = obj.GetComponent<EnemyController>();
+                if (enemy != null)
                 {
-                    EnemyController enemy = obj.GetComponent<EnemyController>();
-                    if (enemy != null)
-                        enemy.TakeDamage(damage);
+                    enemy.TakeDamage(damage);
+                    Destroy(gameObject);
+                    return;
                 }
 
+                // ✅ ตรวจสอบว่าเป็น EnemySummoner
+                EnemySummoner summoner = obj.GetComponent<EnemySummoner>();
+                if (summoner != null)
+                {
+                    summoner.TakeDamage(damage);
+                    Destroy(gameObject);
+                    return;
+                }
+
+                // ถ้าไม่ใช่ enemy ก็แค่ทำลาย projectile
                 Destroy(gameObject);
                 break;
             }
@@ -66,8 +77,4 @@ public class Projectile : MonoBehaviour
     {
         damage = value;
     }
-
-
-
-
 }

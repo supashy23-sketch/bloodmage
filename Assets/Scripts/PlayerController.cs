@@ -7,7 +7,8 @@ public class PlayerController : MonoBehaviour
 {
     [Header("Movement Settings")]
     public float moveSpeed = 5f;
-    public float gridSize = 1f;   // ขนาดของช่อง Grid (Tile Size)
+    public float runMultiplier = 2f; // วิ่งเร็วขึ้น
+    public float gridSize = 1f;
 
     private bool isMoving;
     private Vector2 input;
@@ -74,6 +75,7 @@ public class PlayerController : MonoBehaviour
 
     public void HandleUpdate()
     {
+        bool isRunning = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
         if (!isMoving)
         {
             input.x = Input.GetAxisRaw("Horizontal");
@@ -97,7 +99,7 @@ public class PlayerController : MonoBehaviour
 
                 if (IsWalkable(targetPos))
                 {
-                    StartCoroutine(Move(targetPos));
+                    StartCoroutine(Move(targetPos, isRunning));
                 }
             }
         }
@@ -115,11 +117,17 @@ public class PlayerController : MonoBehaviour
         // ✅ เสียงเดิน
         if (isMoving)
         {
-            if (footstepSource != null && !footstepSource.isPlaying)
+            if (footstepSource != null)
             {
-                footstepSource.clip = footstepSound;
-                footstepSource.loop = true;
-                footstepSource.Play();
+                if (!footstepSource.isPlaying)
+                {
+                    footstepSource.clip = footstepSound;
+                    footstepSource.loop = true;
+                    footstepSource.Play();
+                }
+
+                // 🎵 ปรับความเร็วเสียงตามความเร็ววิ่ง
+                footstepSource.pitch = isRunning ? 2f : 1f;
             }
         }
         else
@@ -143,23 +151,31 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    IEnumerator Move(Vector3 targetPos)
+    IEnumerator Move(Vector3 targetPos, bool isRunning)
     {
         isMoving = true;
 
+        // 🏃‍♂️ ปรับความเร็วตามสถานะวิ่ง
+        float speed = isRunning ? moveSpeed * runMultiplier : moveSpeed;
+
+        // 🎬 ปรับความเร็วแอนิเมชัน
+        animator.speed = isRunning ? 2f : 1f;
+
         while ((targetPos - transform.position).sqrMagnitude > Mathf.Epsilon)
         {
-            transform.position = Vector3.MoveTowards(transform.position, targetPos, moveSpeed * Time.deltaTime);
+            transform.position = Vector3.MoveTowards(transform.position, targetPos, speed * Time.deltaTime);
             yield return null;
         }
 
-        // 🔥 Snap to Grid ให้ตรงกับ Tile
+        // 🔥 Snap กลับให้ตรง Grid
         transform.position = new Vector3(
             Mathf.Round(transform.position.x / gridSize) * gridSize,
             Mathf.Round(transform.position.y / gridSize) * gridSize,
             transform.position.z
         );
 
+        // ❗ รีเซ็ต animator.speed กลับเป็นปกติ (กันแอนิเมชันอื่นเร็วผิดเวลา)
+        animator.speed = 1f;
         isMoving = false;
         CheckForEncounters();
     }
@@ -281,7 +297,7 @@ public class PlayerController : MonoBehaviour
             LevelUp();
         }
     }
-    
+
     void LevelUp()
     {
         // อัปเดต UI
@@ -297,6 +313,21 @@ public class PlayerController : MonoBehaviour
         projectileDamage = Mathf.Clamp(currentLevel, 1, 4);
 
         Debug.Log("Level Up! Now Level " + currentLevel + ", Damage = " + projectileDamage);
+    }
+    
+    public void Heal(int amount)
+    {
+        currentHealth += amount;
+        currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
+
+        if (healthUI != null)
+            healthUI.SetHealth(currentHealth);
+
+        // ถ้าเลือดเกิน threshold ให้หยุดเอฟเฟกต์เตือน
+        if (currentHealth > lowHealthThreshold && isLowHealthEffectActive)
+            StopLowHealthEffect();
+
+        Debug.Log($"Healed {amount} HP! Current HP: {currentHealth}");
     }
 
     
